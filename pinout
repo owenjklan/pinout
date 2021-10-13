@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+import sys
+
+import click
+
+
+pin_count = 28
+chip_part_num = "PIC18F25K22"
+max_pin_text_width = 0
+
+pin_text = {}
+
+pin_formats = {}
+legend_colours = []  # List of ("legend text", "format string") tuples
+
+
+vcc_pins = []
+ground_pins = []
+
+
+vcc_start = "\033[1;31m"
+gnd_start = "\033[38;2;96;96;96m"
+group_reset = "\033[0m"
+
+
+def load_pin_text():
+    global pin_text
+    global max_pin_text_width
+
+    for line in sys.stdin:
+        line = line.strip()
+        pin_num, pin_description = line.split(',', 1)
+        pin_num = int(pin_num)
+        pin_text[pin_num] = pin_description
+        if len(pin_description) > max_pin_text_width:
+            max_pin_text_width = len(pin_description)
+
+
+def get_chip_width():
+    return len(chip_part_num) + 5
+
+
+def get_mid_rows():
+    return int(pin_count / 2)
+
+
+def get_mid_cols():
+    return int(get_chip_width() / 2)
+
+
+def get_max_mid_width():
+    return int(len(chip_part_num) / 2) + 4 + 6
+
+
+def print_top_row(lastpin=14):
+    print(" " * max_pin_text_width + "    ┌" + "─" * get_mid_cols() + "┬─┬" + "─" * get_mid_cols() + "┐ ")
+
+
+def get_group_formatting(pinnum):
+    pinnum = int(pinnum)
+
+    pin_format = pin_formats[pinnum].strip()
+
+    if pinnum in vcc_pins:
+        return vcc_start, group_reset
+
+    if pinnum in ground_pins:
+        return gnd_start, group_reset
+
+    # if pinnum not in vcc_pins and pinnum not in ground_pins:
+    return pin_format, group_reset
+
+
+def print_mid_row(leftpin, rightpin, show_partnum=False, partnum=chip_part_num):
+    if show_partnum:
+        mid_filler = partnum
+        MID_COLS = int(get_chip_width() / 2) - int(len(chip_part_num) / 2) + 1
+    else:
+        mid_filler = "╰─╯" if leftpin == 1 else "   "
+        MID_COLS = int(get_chip_width() / 2)
+
+    left_text = pin_text[leftpin] if leftpin in pin_text.keys() else ""
+    right_text = pin_text[rightpin] if rightpin in pin_text.keys() else ""
+
+    left_pad = max_pin_text_width + 2 - len(left_text)
+
+    left_group_start, left_group_reset = get_group_formatting(leftpin)
+    right_group_start, right_group_reset = get_group_formatting(rightpin)
+
+    print((
+        left_group_start + " " * left_pad + left_text + " ━┥" +
+        str(leftpin) + left_group_reset + (" " * (MID_COLS - len(str(leftpin)))) +
+        mid_filler + (" " * (MID_COLS - len(str(rightpin)))) +
+        right_group_start + str(rightpin) + "┝━ " + right_text + right_group_reset))
+
+
+def print_bottom_row():
+    print(" " * max_pin_text_width + "    └" + "─" * (get_mid_cols() * 2 + 3) + "┘ ")
+
+
+def load_pin_groups(group_specs, pin_count, print_legend=False):
+    global pin_formats
+    global legend_colours
+
+    for pin in range(0, pin_count + 1):
+        pin_formats[int(pin)] = ""
+
+    #legend,R,G,B,... pins in group
+    for spec in group_specs:
+        legend, red, green, blue, pins = spec.split(',', 4)
+        format_string = "\033[38;2;{};{};{}m".format(red, green, blue)
+        legend_colours.append((legend, format_string))
+        
+        if print_legend:
+            print("{}{}{}".format(format_string, legend, group_reset))
+        for pin in pins.split(','):
+            pin = int(pin)
+            pin_formats[pin] = "\033[38;2;{};{};{}m".format(red, green, blue)
+
+
+@click.command()
+@click.option("--part", "-p", "partnum", type=str, default=chip_part_num)
+@click.option("--pins", "-P", "pins", type=int, default=pin_count)
+@click.option("--no-text", "-X", "no_text", is_flag=True, default=False)
+@click.option("--legend", "-l", "legend", is_flag=True, default=False)
+@click.option("--ground", "-G", "ground", type=int, multiple=True)
+@click.option("--vcc", "-V", "vcc", type=int, multiple=True)
+@click.option("--group", "-g", "group_specs", type=str, multiple=True)
+def main(partnum, pins, no_text=False, ground=[], vcc=[], group_specs=[], legend=False):
+    global pin_count
+    global chip_part_num
+    global ground_pins
+    global vcc_pins
+    ground_pins = ground
+    vcc_pins = vcc
+
+    if no_text is False:
+        load_pin_text()
+    chip_part_num = partnum
+    pin_count = pins
+    load_pin_groups(group_specs, pin_count, print_legend=legend)
+
+    print_top_row(lastpin=pin_count)
+
+    leftpin, rightpin = 1, pin_count
+    for row in range(0, int(pin_count / 2)):
+        if row == int(pin_count / 4):
+            show_partnum = True
+        else:
+            show_partnum = False
+        print_mid_row(
+            leftpin, rightpin,
+            show_partnum=show_partnum,
+            partnum=partnum)
+        leftpin += 1
+        rightpin -= 1
+
+    print_bottom_row()
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,28 @@
+1,_MCLR / Vpp
+2,Unused  - RA0
+3,Unused  - RA1
+4,Unused  - RA2
+5,Unused  - RA3
+6,LCD: R/S  - RA4
+7,LCD: Enable  - RA5
+8,GND
+9,Unused  - RA7
+10,LCD: Backlight  - RA6
+11,LCD: D4  - RC0
+12,LCD: D5  - RC1
+13,LCD: D6  - RC2
+14,LCD: D7  - RC3
+15,RC4  - Green LED
+16,RC5  - Buzzer
+17,RC6  - UART-1: Tx
+18,RC7  - UART-1: Rx
+19,GND
+20,+5Vcc
+21,RB0  - Unused
+22,RB1  - SCK2
+23,RB2  - SDI2
+24,RB3  - SDO2
+25,RB4  - Unused
+26,RB5  - Unused
+27,RB6  - ICSP: PGC
+28,RB7  - ICSP: PGD

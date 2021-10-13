@@ -1,0 +1,8 @@
+1,Ground
+2,Trigger
+3,Output
+4,Reset
+5,Control Voltage
+6,Threshold
+7,Discharge
+8,Vcc
